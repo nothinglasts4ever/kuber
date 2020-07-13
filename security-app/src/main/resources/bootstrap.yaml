@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: security-app
+
+keycloak:
+  realm: demorealm
+  auth-server-url: http://127.0.0.1:8080/auth
+  ssl-required: external
+  resource: demoapp
+  credentials:
+    secret: 11111111-1111-1111-1111-111111111111
+  keycloak:
+    use-resource-role-mappings: true
