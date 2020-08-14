@@ -1,3 +1,7 @@
+## Usage
+* Install and run Minikube from shell *minikube start*
+* Run script *./run.sh*
+* Run *minikube service client-app* to get service URL
 ## Standalone Docker Deployment
 ### Dockerfile
 To create docker image for Spring Boot app use the following Dockerfile: 
@@ -35,8 +39,8 @@ spec:
   ports:
     - protocol: TCP
       port: 8080
-      nodePort: 30083
-  type: LoadBalancer
+      nodePort: 30007
+  type: NodePort
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -55,7 +59,7 @@ spec:
       containers:
         - name: db-app
           image: db-app:latest
-          imagePullPolicy: Never
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
 ```
@@ -70,15 +74,42 @@ Here is the bash script to build and deploy the app in Kubernetes
 #!/bin/bash
 
 eval $(minikube docker-env)
-mvn clean
-mvn spring-boot:build-image -Dspring-boot.build-image.imageName=db-app
+mvn clean install
+docker build -t db-app .
 kubectl delete -f db-app-deployment.yaml
 kubectl create -f db-app-deployment.yaml
-kubectl get pods
 ```
 You can access to the app endpoint using the following command:
 ```bash
-minikube service web-app
+minikube service db-app
+```
+## Communication Between Services
+### Build configuration
+Add dependency to the pom.xml:
+```xml
+<properties>
+    <spring-cloud-kubernetes.version>1.1.3.RELEASE</spring-cloud-kubernetes.version>
+</properties>
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-kubernetes-all</artifactId>
+    <version>${spring-cloud-kubernetes.version}</version>
+</dependency>
+```
+### Application configuration
+Add the following annotations to Spring Boot app:
+```java
+@EnableDiscoveryClient
+@EnableFeignClients
+```
+Put service name to properties:
+```yaml
+db-app:
+  url: http://db-app:8080
+```
+To access to other apps use Feign client:
+```java
+@FeignClient(url = "${db-app.url}", name = "db-app")
 ```
 ## Adding Database
 ### Introducing ConfigMap
@@ -86,9 +117,7 @@ minikube service web-app
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: web-app
-  labels:
-    app: web-app
+  name: postgres-config
 data:
   POSTGRES_DB: web
   POSTGRES_USER: user
@@ -129,14 +158,14 @@ spec:
             - containerPort: 5432
           envFrom:
             - configMapRef:
-                name: web-app
+                name: postgres-config
           volumeMounts:
             - mountPath: /var/lib/postgresql/data
-              name: web-data
+              name: pg-data
       volumes:
         - hostPath:
-            path: "/home/docker/pgdata"
-          name: web-data
+            path: /tmp/private/docker/pgdata
+          name: pg-data
 ```
 ### Application Deployment
 Add ConfigMap to the app deployment:
@@ -145,14 +174,36 @@ Add ConfigMap to the app deployment:
       containers:
           envFrom:
             - configMapRef:
-                name: web-app
+                name: postgres-config
 ```
 ### Run Script
 Add the following snippet to the run script:
 ```bash
-kubectl delete configmap web-app
-kubectl create -f web-app-configmap.yaml
-kubectl create -f web-app-deployment.yaml
+kubectl delete configmap postgres-config
+kubectl create -f .k8s/postgres-configmap.yaml
 ```
-## Introducing Ingress ?
 ## Adding Secrets 
+### Secret
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-secret
+data:
+  POSTGRES_USER: dXNlcg==
+  POSTGRES_PASSWORD: cDQ1NXcwcmQ=
+```
+### Application Deployment
+Add secret to the app deployment:
+```yaml
+    spec:
+      containers:
+          envFrom:
+            - secretRef:
+                name: postgres-secret
+```
+### Run Script
+Add the following snippet to the run script:
+```bash
+kubectl apply -f .k8s/postgres-secret.yaml
+```

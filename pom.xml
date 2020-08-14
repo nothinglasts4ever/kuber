@@ -11,7 +11,6 @@
     <modules>
         <module>db-app</module>
         <module>client-app</module>
-        <module>security-app</module>
     </modules>
 
 </project>

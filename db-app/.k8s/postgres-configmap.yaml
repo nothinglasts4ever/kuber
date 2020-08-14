@@ -4,5 +4,3 @@ metadata:
   name: postgres-config
 data:
   POSTGRES_DB: web
-  POSTGRES_USER: user
-  POSTGRES_PASSWORD: p455w0rd
