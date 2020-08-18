@@ -1,8 +1,6 @@
 #!/bin/bash
 
-eval $(minikube docker-env)
-mvn clean install
-docker build -t db-app .
+mvn clean spring-boot:build-image -Djdk.tls.client.protocols="TLSv1.2" -Dhttps.protocols="TLSv1.2"
 
 kubectl delete configmap postgres-config
 kubectl create -f .k8s/postgres-configmap.yaml

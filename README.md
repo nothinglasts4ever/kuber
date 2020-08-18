@@ -207,3 +207,20 @@ Add the following snippet to the run script:
 ```bash
 kubectl apply -f .k8s/postgres-secret.yaml
 ```
+## Introducing Buildpacks
+Instead of building app with maven and then creating image with docker Buildpacks can be used:
+```xml
+<plugin>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-maven-plugin</artifactId>
+    <configuration>
+        <layers>
+            <enabled>true</enabled>
+        </layers>
+    </configuration>
+</plugin>
+```
+```shell script
+mvn clean spring-boot:build-image -Djdk.tls.client.protocols="TLSv1.2" -Dhttps.protocols="TLSv1.2" 
+```
+TLS settings needed due to Java issue with TLS1.3 connection https://bugs.openjdk.java.net/browse/JDK-8236039
