@@ -17,7 +17,7 @@
         <java.version>11</java.version>
         <spring-cloud.version>Hoxton.SR7</spring-cloud.version>
         <spring-cloud-kubernetes.version>1.1.5.RELEASE</spring-cloud-kubernetes.version>
-        <postgresql.version>42.2.15</postgresql.version>
+        <postgresql.version>42.3.3</postgresql.version>
     </properties>
 
     <dependencies>
